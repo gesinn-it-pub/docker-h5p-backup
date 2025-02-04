@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -eu
+
+if [ "${1:-}" = "gh-asset" ]; then
+    echo "Downloading GitHub release asset..."
+    REPO=${2:-}
+    PATTERN=${3:-}
+    VERSION=${4:-}
+    if [ "$REPO" = "" -o "$PATTERN" = "" ]; then
+        echo "Usage: restore gh-asset <REPOSITORY> <ASSET-NAME> [<VERSION>]"
+        exit 1
+    fi
+    echo $GH_API_TOKEN | gh auth login --with-token
+    gh release download $VERSION --repo $REPO --pattern $PATTERN --dir /tmp
+    BACKUP_FILE=/tmp/$PATTERN
+else
+    BACKUP_FILE=${BACKUP_FILE:-"/backup/h5p-backup.tar"}
+fi
+
+TMP_FOLDER=$(mktemp -d)
+cd $TMP_FOLDER
+
+## Show version
+tar xf $BACKUP_FILE h5p-backup.version
+echo "Backup: This backup has been made by h5p-backup version $(cat h5p-backup.version)"
+
+## Restoring database (MariaDB)
+echo "Restoring MariaDB db"
+tar xf $BACKUP_FILE mysqldump.sql.bz2
+bzip2 -d mysqldump.sql.bz2
+echo "Restoring from dump"
+MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysql --default-character-set=utf8 drupal < mysqldump.sql
+echo "Running mysqlcheck"
+MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqlcheck -h $MYSQL_HOST --repair --databases drupal
+
+## Restoring H5P content
+echo "Restoring H5P content"
+rm -rf /var/www/html/web/sites/default/files/h5p/content/*
+tar -C /var/www/html/web/sites/default/files/h5p -xf $BACKUP_FILE content
+
+## Restoring H5P editor images
+echo "Restoring H5P editor images"
+rm -rf /var/www/html/web/sites/default/files/h5peditor/images/*
+tar -C /var/www/html/web/sites/default/files/h5peditor -xf $BACKUP_FILE images
+
+# Setting owner if requested
+test "${RESTORE_OWNER:-}" != "" && { echo "Setting owner=\"$RESTORE_OWNER\""; chown -R $RESTORE_OWNER /var/www/html/web/sites/default/files/h5p/content /var/www/html/web/sites/default/files/h5peditor/images; }
+
+echo "Restored $BACKUP_FILE"

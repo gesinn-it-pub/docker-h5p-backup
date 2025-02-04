@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -eu
+
+BACKUP_FILE=${BACKUP_FILE:-"/backup/h5p-backup.tar"}
+
+if [[ -z "$BACKUP_FILE" ]]; then
+    echo "Error: BACKUP_FILE is not set."
+    exit 1
+fi
+
+if [[ "$BACKUP_FILE" == "/backup/h5p-backup.tar" ]]; then
+    echo "Removing old backup file: $BACKUP_FILE"
+    rm -f "$BACKUP_FILE"
+fi
+
+TMP_FOLDER=`mktemp -d`
+cd $TMP_FOLDER
+
+# set version
+echo $H5P_BACKUP_VERSION > h5p-backup.version
+
+echo "Backing up MariaDB database"
+MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqldump -h $MYSQL_HOST --default-character-set=utf8 --single-transaction --quick drupal -c > mysqldump.sql
+bzip2 -z9 mysqldump.sql
+
+tar -cf $BACKUP_FILE -C $TMP_FOLDER *
+
+echo "Backing up H5P content and images"
+tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5p/content/
+tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5peditor/images/
+
+if [[ -n "$OWNER" ]]; then
+    echo "Setting owner to $OWNER"
+    chown -R $OWNER /backup
+fi
+
+echo "Created backup at $BACKUP_FILE"

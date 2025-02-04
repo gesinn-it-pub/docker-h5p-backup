@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -eu
+
+# repair db
+echo "Repairing MariaDB database"
+MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqlcheck -h $MYSQL_HOST --repair --all-databases --user=$MYSQL_USER
+echo "Repair completed."

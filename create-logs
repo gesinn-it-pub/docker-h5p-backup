@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -eu
+
+BACKUP_FILE=/backup/logs-backup.tar
+rm -f $BACKUP_FILE
+
+TMP_FOLDER=`mktemp -d`
+cd $TMP_FOLDER
+
+echo $H5P_BACKUP_VERSION > h5p-backup.version
+
+echo "Backing up H5P content"
+tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5p content
+
+echo "Backing up H5P images"
+tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5peditor images
+
+if [ -n "$OWNER" ]; then
+    echo "Setting owner to $OWNER"
+    chown -R $OWNER /backup
+fi
+
+echo "Created $BACKUP_FILE"
