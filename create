@@ -27,8 +27,22 @@ bzip2 -z9 mysqldump.sql
 tar -cf $BACKUP_FILE -C $TMP_FOLDER *
 
 echo "Backing up H5P content and images"
-tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5p/content/
-tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5peditor/images/
+
+# check if dir exists
+if [ -d "/var/www/html/web/sites/default/files/h5p" ]; then
+    tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5p .
+else
+    echo "Error: Directory /var/www/html/web/sites/default/files/h5p does not exist."
+    exit 1
+fi
+
+# check if dir exists
+if [ -d "/var/www/html/web/sites/default/files/h5peditor/images" ]; then
+    tar -rf $BACKUP_FILE -C /var/www/html/web/sites/default/files/h5peditor/images .
+else
+    echo "Error: Directory /var/www/html/web/sites/default/files/h5peditor/images does not exist."
+    exit 1
+fi
 
 if [[ -n "$OWNER" ]]; then
     echo "Setting owner to $OWNER"

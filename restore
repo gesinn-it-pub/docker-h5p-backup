@@ -36,8 +36,8 @@ MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqlcheck -h $MYSQL_HOST --repair --databases dr
 
 ## Restoring H5P content
 echo "Restoring H5P content"
-rm -rf /var/www/html/web/sites/default/files/h5p/content/*
-tar -C /var/www/html/web/sites/default/files/h5p -xf $BACKUP_FILE content
+rm -rf /var/www/html/web/sites/default/files/h5p/*
+tar -C /var/www/html/web/sites/default/files/h5p -xf $BACKUP_FILE
 
 ## Restoring H5P editor images
 echo "Restoring H5P editor images"
@@ -45,6 +45,6 @@ rm -rf /var/www/html/web/sites/default/files/h5peditor/images/*
 tar -C /var/www/html/web/sites/default/files/h5peditor -xf $BACKUP_FILE images
 
 # Setting owner if requested
-test "${RESTORE_OWNER:-}" != "" && { echo "Setting owner=\"$RESTORE_OWNER\""; chown -R $RESTORE_OWNER /var/www/html/web/sites/default/files/h5p/content /var/www/html/web/sites/default/files/h5peditor/images; }
+test "${RESTORE_OWNER:-}" != "" && { echo "Setting owner=\"$RESTORE_OWNER\""; chown -R $RESTORE_OWNER /var/www/html/web/sites/default/files/h5p /var/www/html/web/sites/default/files/h5peditor/images; }
 
 echo "Restored $BACKUP_FILE"
